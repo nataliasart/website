@@ -1,2 +1,423 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Natalias</title>
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/css-doodle/0.38.4/css-doodle.min.js"></script>
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        /* align-items: center; */
+        height: 100vh;
+        width: 100%;
+        margin: 0;
+        background-color: #f0f0f0;
+        font-family: 'Times New Roman', Times, serif;
+      }
+
+      css-doodle {
+        width: 450px;
+        height: 600px;
+        box-shadow: 0 0 0 1px rgba(223,223,223,0.50), 0 3px 6px 0 rgba(0,0,0,0.04);
+      }
+
+      .flex {
+        display: flex;
+      }
+      a { color: mediumblue }
+    </style>
+  </head>
+
+  <body>
+
+    <div id="app">
+      <div class="flex" style="margin-top: 4rem; max-width: 70vw">
+        <div v-if="!api" style="width: 31vw; padding-right: 7vw;">
+            <h1 style="font-size: 48px; font-family: monospace; margin-bottom: 1rem">Natalias</h1>
+            <p style="margin: 0; font-size: 16px; color: rgb(101, 101, 101)">
+              Introducing Natalias: an exclusive collection of 2,016+ generative art pieces, inscribed as non-arbitrary tokens (NATs) on the Bitcoin blockchain. 
+              Crafted for the discerning Ordinals connoisseur, Natalias offers a unique opportunity to hunt for digital artifacts found only in specific blocks, with their design intricately influenced by that block's "bits" value.
+              <br /><br />
+              In an eloquent homage to the avant-garde, Natalias manifest as a symphony of abstract digital expressionism. Each inscription embodies a resplendent vision of complexity and contrast, with bold strokes and audacious color palettes that reflect the sophistication of cryptographic transactions. The collection aims to artfully combine the interplay of shapes and richness of color, to offer a visual metaphor for Bitcoin's enduring ledger.
+              <br /><br />
+              <b style="font-family: monospace">Enter a $dmt-natalias block to see the art:</b>
+            </p>
+            <input v-model="enteredSeed" type="text" style="font-size: 36px; border: none; width: 240px; padding: 3px 6px; margin-bottom: 8px; margin-top: 4px; outline: none; background: rgb(218, 218, 218)" /><br />
+            <button @click="generateArt()" style="border-radius: 5px; font-size: 16px; border: none; background: rgb(157, 86, 209); color: white; padding: 12px 36px">Generate</button>
+            <div style="font-size: 12px; margin-top: 6px;">Note: This viewer does not currently check if blocks are valid.</div>
+            <div style="margin-top: 2rem; font-size: 15px;">
+              <!-- <a href="https://natalias.gitbook.io/" target="_blank">Learn More</a><br /><br /> -->
+              <a href="https://twitter.com/dmtnatalias" target="_blank">Twitter</a>
+              <br /><br />
+              <a href="https://digital-matter-theory.gitbook.io/">Digital Matter Theory</a>
+            </div>
+        </div>
+        <div v-show="show" style="width: 450px;">
+          <css-doodle id="nataliasviewer" use="var(--doodle-rule)" :seed="seed"></css-doodle>
+          <div v-if="!api">
+            <div id="seed_number" style="font-size: 16px; text-align: center; margin: 16px 0 3px 0; font-weight: bold">{{ Number(this.seed).toLocaleString() }}</div>
+            <div style="text-align: center; font-size: 14px;"><span>
+              <a href="#" id="seeTraits">View Traits</a> | 
+              <a href='#' id='download'>Download image</a>
+              <!-- <a href='#' id='loopButton'>Loop</a> -->
+              <!-- <br /><a href='#'>Burn & redeem physical edition</a> -->
+            </span></div>
+            <pre style="margin: 10px 0 10px 5rem" v-if="metadata && viewTraits">{{metadata}}</pre>
+          </div>
+        </div>
+        <div v-show="!show" style="width: 450px; display: flex; justify-content: center; align-items: center;">
+          <div>There is no piece on this block.</div>
+        </div>
+      </div>
+    </div>
+
+    <script id="preview" mint="MINT_INSCRIPTION_ID">
+          const {
+            createApp
+          } = Vue;
+
+          createApp({
+            data() {
+              return {
+                show: true,
+                loopInterval: null,
+                loop: false,
+                viewTraits: false,
+                api: null,
+                seed: Math.floor(Math.random() * (659231 - 657216 + 1) + 657216),
+                enteredSeed: null,
+                maxShapes: 100,
+                minShapes: 20,
+                spiral: true,
+                margin: true,
+                softShapes: true,
+                brushes: ["Paint", "Paint", "Paint", "Paint", "Solid"],
+                styles: ["Graffiti", "Radial", "Radial", "Radial"],
+                colorSchemes: [
+                    {
+                        name: 'Salad',
+                        background: "#e4e2e0",
+                        colors: ['#f9f8eb', '#76b39d', '#05004e', '#fd5f00']
+                    },
+                    {
+                        name: 'Black',
+                        background: "#f0f0f0",
+                        colors: ['#111111', '#1d1d1d']
+                    },                 
+                    {
+                        name: 'Ocean',
+                        background: '#001f54',
+                        colors: [ '#0a1128', '#034078', '#1282a2']
+                    },
+                    {
+                        name: 'Bloodbath',
+                        background: '#151730',
+                        colors: ['#d93c57', '#ee566f']
+                    },
+                    {
+                        name: 'White Stripes',
+                        background: '#d93c57',
+                        colors: ['#ffffff']
+                    },
+                    {
+                        name: 'Blue Stripes',
+                        background: '#244b9c',
+                        colors: ['#ffffff']
+                    },
+                    {
+                        name: 'Shogun',
+                        background: '#373242',
+                        colors: ['#ee566f', '#ffffff', '#bca98e', '#96b49b']
+                    },
+                    {
+                      name: 'Mondo',
+                      background: '#ffffff',
+                      colors: ['#1d1d1d', '#d31119', '#f6d203', '#004a97']
+                    },
+                    {
+                      name: 'Professional',
+                      background: '#f0f1e8',
+                      colors: ['#244b9c', '#131814']
+                    },
+                    {
+                      name: 'Playground',
+                      background: '#080e41',
+                      colors: ['#cc481f', '#153583', '#9f1404']
+                    },
+                    {
+                      name: "Sahara",
+                      background: '#dabf98',
+                      colors: ['#da6b3f', '#5f433a', '#6ba6a6', '#e4e2e0']
+                    },                    
+                    {
+                      name: "Candy",
+                      background: '#e4dccd',
+                      colors: ['#6c4a77', '#e7a600', '#e65b2f', '#0565ac', '#1a2325']
+                    },
+                    {
+                      name: "Chill",
+                      background: '#dcd2c7',
+                      colors: ['#ea6c44', '#4f3e4f', '#375267', '#a9812a', '#d8d2cc']
+                    },
+                    {
+                      name: 'Smoothie',
+                      background: '#ecc9cc',
+                      colors: ['#2b3081', '#552f8c', '#ea417f', '#e586b3', '#ba2730', '#101819']
+                    },
+                    {
+                        name: 'Rainbro',
+                        background: '#e4e2e0',
+                        colors: ['#28a590', '#faba1a', '#b6d8cc', '#543e2e', '#da4e54']
+                    }
+                ],
+              };
+            },
+            watch:{
+              enteredSeed: function(old, news) {
+                this.stopLoop();
+              }
+            },
+            computed: {
+              metadata() {
+                if(!this.seed) return null;
+                else {
+                  let obj = {
+                    "meta": {
+                        "name": "Natalias #" + this.seed,
+                        "attributes": [
+                        ]
+                    }
+                  };
+
+                  obj.meta.attributes.push({
+                      "trait_type": "Style",
+                      "value": this.chosenStyle()
+                  });
+
+                  obj.meta.attributes.push({
+                      "trait_type": "Margin",
+                      "value": !!(this.hasMargin())
+                  });
+
+                  obj.meta.attributes.push({
+                      "trait_type": "Shape Count",
+                      "value": this.shapeCount()
+                  });
+
+                  obj.meta.attributes.push({
+                      "trait_type": "Color Scheme",
+                      "value": this.getRandomColorScheme().name
+                  });
+
+                  obj.meta.attributes.push({
+                      "trait_type": "Glitch",
+                      "value": this.isGlitch()
+                  });
+
+                  obj.meta.attributes.push({
+                      "trait_type": "Rotated",
+                      "value": this.isRotated()
+                  });
+
+                  obj.meta.attributes.push({
+                      "trait_type": "Inverted",
+                      "value": this.isInverted()
+                  });
+
+                  return obj;
+                }
+              }
+            },
+            methods: {
+              isRotated: function() {
+                return (/444/.test(this.seed.toString()));
+              },
+              isInverted: function() {
+                return (/999/.test(this.seed.toString()));
+              },
+              stopLoop: function() {
+                if(this.loopInterval) clearInterval(this.loopInterval);
+                this.loop = false;
+              },
+              shapeCount() {
+                let num = (Number(this.seed) % (this.maxShapes-this.minShapes)) + this.minShapes; 
+                if(this.chosenStyle() == "Graffiti") num *= 0.8;
+                return Math.floor(num);
+              },
+              hasMargin() {
+                return Number(this.seed) % 2 === 0;
+              },
+              chosenStyle() {
+                const index = Number(this.seed) % this.styles.length;
+                return this.styles[index];
+              },
+              getRandomColorScheme() {
+                const deterministicIndex = Number(this.seed) % this.colorSchemes.length;
+                return {
+                  name: this.colorSchemes[deterministicIndex].name,
+                  background: this.colorSchemes[deterministicIndex].background,
+                  colors: this.colorSchemes[deterministicIndex].colors.join(', ')
+                };
+              },
+              getRandomBrush() {
+                const deterministicIndex = Number(this.seed) % this.brushes.length;
+                return this.brushes[deterministicIndex];
+              },
+              isGlitch() {
+                return (/(.)\1{2,}/.test(this.seed.toString()));
+              },
+              async generateArt() {
+                if(this.enteredSeed) {
+                  this.seed = this.enteredSeed;
+                  const response = await fetch("https://www.geniidata.com/api/dashboard/chart/public/data?chartId=299933&searchKey=blockNumber&searchValue=" + this.seed);
+                  const data = await response.json();
+                  if(data && data.data && data.data.list && data.data.list.length > 0) {
+                    console.log(data);
+                    this.show = true;
+                  } else {
+                    this.show = false;
+                    console.log("none");
+                  }
+                }
+
+                let newRule;
+                let cssDoodle = document.querySelector('css-doodle');
+                if(this.show) {
+                  this.$nextTick(() => {
+                      this.spiral = this.chosenStyle() == "Radial" ? true : false;
+                      this.softShapes = this.getRandomBrush() == "Paint" ? true : false;
+                      this.margin = this.hasMargin();
+                      let colors = this.getRandomColorScheme();
+                      newRule = `(@grid: 1 / 500px 700px;
+                      ${this.margin ? 'border: 20px solid #fff;' : ''}
+                      background-size: 100% 100%;
+                      background-color: ${colors.background};
+                      background-image: @svg(viewBox: 0 0 100 140;
+                      --starting: @r(0, 100);
+                      --starting2: @r(0.01, 4.00);
+                      --starting3: ${this.isGlitch() ? '@r(100, 400)' : '@r(0.15, 0.50)'};
+                          g {
+                          fill: none;
+                          mix-blend-mode: multiply;
+                          path*${this.shapeCount()} {
+                              ${this.softShapes ? `filter: defs filter {
+                              feTurbulence {
+                                  type: fractalNoise;
+                                  baseFrequency: ${this.isGlitch() ? '2, 400' : '.01 40'};
+                                  numOctaves: 2;
+                              }
+                              feDisplacementMap {
+                                  in: SourceGraphic;
+                                  scale: @pn(--starting3);
+                              }
+                              feGaussianBlur {
+                                  stdDeviation: 0;
+                              }
+                              }` : ``}
+                              stroke: @p(${colors.colors});
+                              stroke-width: @r(1.5, 7);
+                              stroke-dasharray: @M2.@r(10, 70);
+                              stroke-opacity: @r(0.8, 1);
+                              d: M ${this.spiral ? '@pn(--starting) @calc(@pn(--starting) * @pn(--starting2))' : '@r(0, 100) @r(0, 140)'} Q @Plot(r: 60; move: 20 80) @Plot(r: 125; move: 80 60);
+                              mix-blend-mode: exclusion;
+                          }
+                          }
+                      );
+                      ${this.isInverted() ? 'filter: invert(100%);' : ''}
+                      ${this.isRotated() ? 'filter: hue-rotate(180deg);' : ''}
+                      )`;
+                      cssDoodle.style.setProperty('--doodle-rule', newRule);
+                      cssDoodle.update();
+                  });
+                } else {
+                  console.log("NOT SHOWING");
+                  // not showing
+                  this.$nextTick(() => {
+                    newRule = `(@grid: 1 / 500px 700px;
+                    background-size: 100% 100%;
+                    )`;
+                    cssDoodle.style.setProperty('--doodle-rule', newRule);
+                    cssDoodle.update();
+                  });
+                }
+                console.log(this.isInverted());
+              }
+            },
+            mounted() {
+              const urlParams = new URLSearchParams(window.location.search);
+              let id = urlParams.get('id');
+              let block = urlParams.get('block');
+              if(urlParams.get('loop')) this.loop = urlParams.get('loop');
+              else if(id || block) this.loop = false;
+              this.api = urlParams.get('api'); // html or json
+
+              let override_id = document.getElementById('preview').getAttribute('mint');
+              if(!override_id.includes('MINT_INSCRIPTION_ID')) {
+                id = override_id;
+              }
+
+              if (id) {
+                // TODO: Fetch inscription id's content's and set seed to blk
+                this.seed = Number(id);
+                // Fetch inscription id's content's and set seed to blk
+                fetch('/content/' + id)
+                  .then(response => response.json())
+                  .then(data => {
+                    console.log("block =", id, data, data.blk);
+                    this.seed = Number(data.blk);
+                    this.generateArt();
+                  });
+              } else if(block) {
+                this.seed = Number(block);
+                this.generateArt();
+              } else {
+                this.generateArt();
+              }
+
+              if(this.loop) {
+                this.loopInterval = setInterval(() => {
+                  this.seed++;
+                  this.generateArt();
+                }, 1000);
+              }
+
+
+              // Select the css-doodle element
+              const cssDoodleElement = document.querySelector('css-doodle');
+
+              document.querySelector('#seeTraits').addEventListener('click', async e => {
+                this.viewTraits = !this.viewTraits;
+              });
+
+              // document.querySelector('#loopButton').addEventListener('click', async e => {
+              //   this.loop = !this.loop;
+              //   if(!this.loop) {
+              //     clearInterval(this.loopInterval);
+              //     this.loopInterval = null;
+              //   } else {
+              //     this.loopInterval = setInterval(() => {
+              //       this.seed++;
+              //       this.generateArt();
+              //     }, 1000);
+              //   }
+              // });
+
+              document.querySelector('#download').addEventListener('click', async e => {
+                let result = await cssDoodleElement.export({
+                    scale: 1,
+                    download: true
+                });
+                console.log(result);
+              });
+
+            }
+          }).mount('#app');
+    </script>
+
+  </body>
+
 </html>
