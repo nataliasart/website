@@ -50,7 +50,7 @@
             <button @click="generateArt()" style="border-radius: 5px; font-size: 16px; border: none; background: rgb(157, 86, 209); color: white; padding: 12px 36px">Generate</button>
             <div style="font-size: 12px; margin-top: 6px;">Note: This viewer does not currently check if blocks are valid.</div>
             <div style="margin-top: 2rem; font-size: 15px;">
-              <!-- <a href="https://natalias.gitbook.io/" target="_blank">Learn More</a><br /><br /> -->
+              <a href="https://natalias.gitbook.io/natalias" target="_blank">Learn More</a><br /><br />
               <a href="https://twitter.com/dmtnatalias" target="_blank">Twitter</a>
               <br /><br />
               <a href="https://digital-matter-theory.gitbook.io/">Digital Matter Theory</a>
@@ -342,7 +342,6 @@
                       cssDoodle.update();
                   });
                 } else {
-                  console.log("NOT SHOWING");
                   // not showing
                   this.$nextTick(() => {
                     newRule = `(@grid: 1 / 500px 700px;
@@ -369,7 +368,6 @@
               }
 
               if (id) {
-                // TODO: Fetch inscription id's content's and set seed to blk
                 this.seed = Number(id);
                 // Fetch inscription id's content's and set seed to blk
                 fetch('/content/' + id)
