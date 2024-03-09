@@ -209,6 +209,11 @@
                   });
 
                   obj.meta.attributes.push({
+                      "trait_type": "Shape Style",
+                      "value": this.shapeStyle()
+                  });
+
+                  obj.meta.attributes.push({
                       "trait_type": "Color Scheme",
                       "value": this.getRandomColorScheme().name
                   });
@@ -266,6 +271,9 @@
               getRandomBrush() {
                 const deterministicIndex = Number(this.seed) % this.brushes.length;
                 return this.brushes[deterministicIndex];
+              },
+              shapeStyle() {
+                return this.getRandomBrush() === "Paint" ? "Soft" : "Solid";
               },
               isGlitch() {
                 return (/(.)\1{2,}/.test(this.seed.toString()));
