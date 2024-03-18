@@ -62,10 +62,14 @@
             <div id="seed_number" style="font-size: 16px; text-align: center; margin: 16px 0 3px 0; font-weight: bold">{{ Number(this.seed).toLocaleString() }}</div>
             <div style="text-align: center; font-size: 14px;"><span>
               <a href="#" id="seeTraits">View Traits</a> | 
-              <a href='#' id='download'>Download image</a>
+              <a href='#' id='download'>Download image</a> |
+              <a href='#' @click="showHD = !showHD" id='download-hd'> hi-res</a> (experimental)
               <!-- <a href='#' id='loopButton'>Loop</a> -->
               <!-- <br /><a href='#'>Burn & redeem physical edition</a> -->
             </span></div>
+            <div v-if="showHD" style="text-align: center;">
+                Scale (1-16): <input type="number" placeholder="Scale (1-16)" v-model="scaleHD" style="width: 64px; margin-top: 10px"/> <button @click="downloadhd()">Export</button>
+            </div>
             <pre style="margin: 10px 0 10px 5rem" v-if="metadata && viewTraits">{{metadata}}</pre>
           </div>
         </div>
@@ -83,6 +87,8 @@
           createApp({
             data() {
               return {
+                showHD: false,
+                scaleHD: 10,
                 show: true,
                 loopInterval: null,
                 loop: false,
@@ -238,6 +244,13 @@
               }
             },
             methods: {
+                downloadhd: async function() {
+                    const cssDoodleElement = document.querySelector('css-doodle');
+                    let result = await cssDoodleElement.export({
+                        scale: this.scaleHD,
+                        download: true
+                    });
+                },
               isRotated: function() {
                 return (/444/.test(this.seed.toString()));
               },
